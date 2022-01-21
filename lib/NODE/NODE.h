@@ -54,7 +54,7 @@ class NODE{
         void register_recieve_cb(esp_now_recv_cb_t recieveFunc);
 
         // this should be called in the loop, basicly just looks for new nodes and adds them to the network if they are found
-        void search_new_nodes();
+        void dynamic_pair();
 
         // send data
         bool sendData(const uint8_t* peer_addr ,const uint8_t* data, uint8_t dataLen);

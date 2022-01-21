@@ -16,7 +16,7 @@ NODE::NODE(uint8_t* pmk, const uint8_t chnannel, const char* SSID, const char* P
     }
     else
     {
-        Serial.println("ESP-NOW initialisation failed... Restarting...");
+        Serial.println("ESP-NOW initialisation failed... Restarting ESP...");
 
         ESP.restart();
     }
@@ -91,10 +91,20 @@ bool NODE::sendData(const uint8_t* peer_addr, const uint8_t* data, uint8_t dataL
 
     free(cutData);
 
-    if(result != ESP_OK)
-        return false;
-    else
+    if(result == ESP_OK)
         return true;
+    else if(result == ESP_ERR_ESPNOW_NOT_FOUND ||result == ESP_ERR_ESPNOW_IF)
+    {
+        esp_now_del_peer(peer_addr);
+        return false;
+    }
+    else return false;
+}
+
+void NODE::dynamic_pair()
+{
+    if(search_for_devices())
+        Serial.println("Paired with a device / devices.");
 }
 
 bool NODE::search_for_devices()
@@ -153,6 +163,8 @@ bool NODE::search_for_devices()
             clear_current_node();
         }
     }
+
+    WiFi.scanDelete();
 
     return (relaysAdded > 0);
 }
