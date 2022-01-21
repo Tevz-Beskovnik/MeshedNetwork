@@ -3,7 +3,8 @@
 #include <WiFiUdp.h>
 #include <esp_wifi.h>
 
-#define LED_PIN 33
+#define LED_PIN_CONNECTION 33
+#define LED_PIN_MESSAGE 18
 
 // default relay coms channel is 7 (from 0 - 14)
 #ifndef CHANNEL
@@ -25,6 +26,11 @@
 	#define ENCRYPTION 0
 #endif
 
+// max connections the node can have default is 20 can be lowered if necessary
+#ifndef MAX_CONNECTIONS
+	#define MAX_CONNECTIONS 20
+#endif
+
 // my access point settings 
 const char* ssid = "BESKOVNIK_BAJTA";
 const char* password = "JojKakSmoZejni!";
@@ -38,9 +44,9 @@ int aps;
 
 void setup() {
 	// set the pin 33 to be output
-	pinMode(LED_PIN, OUTPUT);
+	pinMode(LED_PIN_CONNECTION, OUTPUT);
 	// write digital high to output
-	digitalWrite(LED_PIN, HIGH);
+	digitalWrite(LED_PIN_CONNECTION, HIGH);
 
 	// start the serial connection
 	Serial.begin(115200);
@@ -74,7 +80,7 @@ void setup() {
 	Serial.print("Router IP: ");
 	Serial.println(WiFi.softAPIP());
 	delay(1000);
-	digitalWrite(LED_PIN, LOW);
+	digitalWrite(LED_PIN_CONNECTION, LOW);
 	udp.begin(8888);
 }
 
@@ -85,7 +91,7 @@ void loop() {
 	udp.write('b');
 
 	// flash the LED
-	digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+	digitalWrite(LED_PIN_CONNECTION, !digitalRead(LED_PIN_CONNECTION));
 
 	if(!udp.endPacket())
 	{

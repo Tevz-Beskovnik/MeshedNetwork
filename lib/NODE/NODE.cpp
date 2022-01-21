@@ -1,7 +1,7 @@
 #include "NODE.h"
 
-NODE::NODE(uint8_t* pmk, const uint8_t chnannel, const char* SSID, const char* PASS, bool encrypt = false)
-    :pmk(pmk), channel(channel), PASS(PASS), SSID(SSID), nodesConnected(0), encrypt(encrypt)
+NODE::NODE(uint8_t* pmk, const uint8_t chnannel, const char* SSID, const char* PASS, bool encrypt = false, uint8_t maxConnections)
+    :pmk(pmk), channel(channel), PASS(PASS), SSID(SSID), encrypt(encrypt), maxConnections(maxConnections)
 {
     WiFi.mode(WIFI_MODE_APSTA);
 
@@ -27,8 +27,8 @@ NODE::NODE(uint8_t* pmk, const uint8_t chnannel, const char* SSID, const char* P
     }
 }
 
-NODE::NODE(const uint8_t channel, const char* SSID, const char* PASS, bool encrypt = false)
-    :channel(channel), PASS(PASS), SSID(SSID), nodesConnected(0), encrypt(encrypt)
+NODE::NODE(const uint8_t channel, const char* SSID, const char* PASS, bool encrypt = false, uint8_t maxConnections)
+    :channel(channel), PASS(PASS), SSID(SSID), encrypt(encrypt), maxConnections(maxConnections)
 {
     WiFi.mode(WIFI_MODE_APSTA);
 
@@ -64,16 +64,14 @@ void NODE::register_recieve_cb(esp_now_recv_cb_t recieveFunc)
     esp_now_register_recv_cb(recieveFunc);
 }
 
+void NODE::update_connections_cb(node_update_connections_cb_t updateFunc)
+{
+    connectionUpdate = updateFunc;
+}
+
 uint8_t NODE::get_pmk()
 {
     return *pmk;
-}
-
-void NODE::set_pmk(uint8_t* newPmk)
-{
-    pmk = newPmk;
-    if(esp_now_set_pmk(pmk) != ESP_OK)
-        Serial.println("Setting the PMK was unssucessful");
 }
 
 uint8_t NODE::get_channel()
@@ -81,18 +79,35 @@ uint8_t NODE::get_channel()
     return channel;
 }
 
-void NODE::set_channel(const uint8_t newChannel)
+bool NODE::sendData(const uint8_t* peer_addr, const uint8_t* data, uint8_t dataLen)
 {
-    channel = newChannel;
+    if(!(dataLen < ESP_NOW_MAX_DATA_LEN) || !esp_now_is_peer_exist(peer_addr)) return;
+
+    uint8_t* cutData = (uint8_t*)malloc(dataLen*sizeof(uint8_t));
+
+    memcpy(cutData, data, dataLen * sizeof(uint8_t));
+
+    esp_err_t result = esp_now_send(peer_addr, cutData, dataLen);
+
+    free(cutData);
+
+    if(result != ESP_OK)
+        return false;
+    else
+        return true;
 }
 
-bool NODE::searchForDevices()
+bool NODE::search_for_devices()
 {
     uint8_t networksFound = WiFi.scanNetworks();
     uint8_t relaysAdded = 0;
-    clearCurrentNode();
+    clear_current_node();
 
-    if(nodesConnected > 19) return false;
+    esp_now_peer_num_t* numOfConnections;
+
+    esp_now_get_peer_num(numOfConnections);
+
+    if(numOfConnections->total_num > maxConnections) return false;
 
     if(networksFound = 0)
     {
@@ -110,7 +125,6 @@ bool NODE::searchForDevices()
 
             String peerSSID = WiFi.SSID(i);
             if(peerSSID.substring(0, 10) != "RELAY_NODE") continue;
-            connectedNodes[nodesConnected] = peerSSID;
             uint8_t* peerMAC = WiFi.BSSID(i);
             uint8_t mac[6] = { peerMAC[5], peerMAC[4], peerMAC[3], peerMAC[2], peerMAC[1], peerMAC[0] };
             for(uint8_t j = 0; j < 6; j++)
@@ -128,14 +142,15 @@ bool NODE::searchForDevices()
                 Serial.print(peerSSID);
                 Serial.println(" failed to complete.");
             }else{
+                connectedNodes[numOfConnections->total_num-1].peerName = peerSSID;
+                connectedNodes[numOfConnections->total_num-1].peerInfo = *currentNode;
                 Serial.print("Relay node ");
                 Serial.print(peerSSID);
                 Serial.println(" paired!");
-                nodesConnected++;
                 relaysAdded++;
             }
 
-            clearCurrentNode();
+            clear_current_node();
         }
     }
 
@@ -149,13 +164,10 @@ esp_err_t NODE::pair_node(const esp_now_peer_info_t* peer)
 
 bool NODE::check_if_node_paired(const esp_now_peer_info_t* info)
 {
-    if(esp_now_get_peer(info->peer_addr, (esp_now_peer_info_t*)info) != ESP_OK)
-        return false;
-    else
-        return true;
+    return esp_now_is_peer_exist(info->peer_addr);
 }
 
-void NODE::clearCurrentNode()
+void NODE::clear_current_node()
 {
     memset((void*)currentNode, 0, sizeof(esp_now_peer_info_t));
 }
