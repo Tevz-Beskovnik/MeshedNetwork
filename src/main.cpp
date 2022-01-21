@@ -5,6 +5,26 @@
 
 #define LED_PIN 33
 
+// default relay coms channel is 7 (from 0 - 14)
+#ifndef CHANNEL
+    #define CHANNEL 7
+#endif
+
+// default relay node id should start with "RELAY_NODE" to get recognised by network
+#ifndef NODE_ID
+	#define NODE_ID "RELAY_NODE_1"
+#endif
+
+// default password for the relay network
+#ifndef PASS
+	#define PASS "DEFAULT_PASS"
+#endif
+
+// default encryption will be turned off
+#ifndef ENCRYPTION
+	#define ENCRYPTION 0
+#endif
+
 // my access point settings 
 const char* ssid = "BESKOVNIK_BAJTA";
 const char* password = "JojKakSmoZejni!";
