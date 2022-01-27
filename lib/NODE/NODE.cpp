@@ -3,6 +3,11 @@
 NODE::NODE(uint8_t* pmk, const uint8_t chnannel, const char* SSID, const char* PASS, bool encrypt = false, uint8_t maxConnections)
     :pmk(pmk), channel(channel), PASS(PASS), SSID(SSID), encrypt(encrypt), maxConnections(maxConnections)
 {
+	// pin for connection
+	pinMode(LED_PIN_CONNECTION, OUTPUT);
+	// digital write
+	digitalWrite(LED_PIN_CONNECTION, LOW);
+
     WiFi.mode(WIFI_MODE_APSTA);
 
     if(!enable_discoverability())
@@ -109,6 +114,8 @@ void NODE::dynamic_pair()
 
 bool NODE::search_for_devices()
 {
+    digitalWrite(LED_PIN_CONNECTION, LOW);
+
     uint8_t networksFound = WiFi.scanNetworks();
     uint8_t relaysAdded = 0;
     clear_current_node();
@@ -158,6 +165,8 @@ bool NODE::search_for_devices()
                 Serial.print(peerSSID);
                 Serial.println(" paired!");
                 relaysAdded++;
+                digitalWrite(LED_PIN_CONNECTION, HIGH);
+                delay(500);
             }
 
             clear_current_node();

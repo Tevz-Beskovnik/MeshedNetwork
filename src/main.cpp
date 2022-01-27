@@ -2,9 +2,13 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <esp_wifi.h>
+#include "../lib/NODE/NODE.h"
 
-#define LED_PIN_CONNECTION 33
-#define LED_PIN_MESSAGE 18
+// led pin on message recieve
+#define LED_PIN_MESSAGE_RCV 18
+
+// led pin on message send
+#define LED_PIN_MESSAGE_SND 22
 
 // default relay coms channel is 7 (from 0 - 14)
 #ifndef CHANNEL
@@ -31,76 +35,33 @@
 	#define MAX_CONNECTIONS 20
 #endif
 
-// my access point settings 
-const char* ssid = "BESKOVNIK_BAJTA";
-const char* password = "JojKakSmoZejni!";
-// esp access point settings
-const char* rSsid = "eps32-1";
-const char* rPassword = "123456789!";
-// udp wifi
-WiFiUDP udp;
-// esp access point
-int aps;
-
-void setup() {
-	// set the pin 33 to be output
-	pinMode(LED_PIN_CONNECTION, OUTPUT);
-	// write digital high to output
-	digitalWrite(LED_PIN_CONNECTION, HIGH);
-
-	// start the serial connection
-	Serial.begin(115200);
-	Serial.println("Serial connected");
-
-	WiFi.mode(WIFI_AP_STA);
-	WiFi.begin(ssid, password);
-
-	// connect to our wifi
-	while(WiFi.status() != WL_CONNECTED)
-	{
-		delay(500);
-		Serial.print(".");
-	}
-
-	// get the ip we got
-	Serial.println("Connected to wifi");
-	Serial.print("Local IP: ");
-	Serial.println(WiFi.localIP());
-
-
-	// setup internal access point in esp
-	// set the wifi mode to AP (access point)
-	WiFi.mode(WIFI_AP);
-	// config for LR mode (long range)
-	int aps = esp_wifi_set_protocol(WIFI_IF_AP, WIFI_PROTOCOL_LR);
-	if(aps != ESP_OK)
-		Serial.println("ESP access point was not properly setup!");
-	// setup the access point with ssid and password
-	WiFi.softAP(rSsid, rPassword);
-	Serial.print("Router IP: ");
-	Serial.println(WiFi.softAPIP());
-	delay(1000);
-	digitalWrite(LED_PIN_CONNECTION, LOW);
-	udp.begin(8888);
+void sendFunc(const uint8_t *mac_addr, esp_now_send_status_t status)
+{
+	if(status = esp_now_send_status_t::ESP_NOW_SEND_SUCCESS)
+		Serial.println("send successful");  
+	else
+		Serial.println("send not successful"); 
+	digitalWrite(LED_PIN_MESSAGE_SND, !digitalRead(LED_PIN_MESSAGE_SND));
 }
 
-void loop() {
-	// send a brodcast message on port 8888 with IP below
-  	udp.beginPacket({ 192, 168, 4, 255 }, 8888);
-	// the packet
-	udp.write('b');
+void recieveFunc(const uint8_t *mac_addr, const uint8_t *data, int data_len)
+{
+	Serial.println("recieved a message");
+	digitalWrite(LED_PIN_MESSAGE_RCV, !digitalRead(LED_PIN_MESSAGE_RCV));
+}
 
-	// flash the LED
-	digitalWrite(LED_PIN_CONNECTION, !digitalRead(LED_PIN_CONNECTION));
+void setup() 
+{
+	pinMode(LED_PIN_MESSAGE_RCV, OUTPUT);
+	pinMode(LED_PIN_MESSAGE_SND, OUTPUT);
 
-	if(!udp.endPacket())
-	{
-		Serial.println("Packet was not sent!");
-		delay(100);
-		ESP.restart();
-	}else{
-		Serial.println("Packet sent!");
-	};
+	digitalWrite(LED_PIN_MESSAGE_RCV, LOW);
+	digitalWrite(LED_PIN_MESSAGE_SND, LOW);
 
-	delay(1000);
+
+}
+
+void loop() 
+{
+	
 }

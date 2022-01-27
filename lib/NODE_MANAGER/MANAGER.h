@@ -5,5 +5,5 @@ class MANAGER
 {
     MANAGER();
 
-    ~MANAGER()
+    ~MANAGER();
 };
