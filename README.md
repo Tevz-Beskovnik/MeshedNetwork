@@ -3,7 +3,7 @@ MeshedNetwork
 
 # THIS REPO IS NOT DEFUNKT
 
-The development of this project is now continuing in the [ESPRN](https://github.com/esprn) organisation.
+The development of this project is now continuing in the [ESP Relay Network](https://github.com/esprn) organisation.
 
 # ESP-NOW meshed networks
 
